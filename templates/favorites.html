@@ -3,6 +3,7 @@
 <head>
     <title>Избранное</title>
     <link rel="stylesheet" href="static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 {% include "partials/nav.html" %}
@@ -10,14 +11,44 @@
 <ul>
     {% for f in favs %}
         <li>
-            {{ f.product.name }} — {{ f.product.latest_price }} ₽ (обновлено: {{ f.product.last_checked }})
+            <strong>{{ f.product.name }}</strong> — {{ f.product.latest_price }} ₽
+            (обновлено: {{ f.product.last_checked.strftime('%d.%m.%Y %H:%M') }})
             <form action="/remove_favorite" method="post" style="display:inline;">
                 <input type="hidden" name="product_id" value="{{ f.product.id }}">
                 <button type="submit">Удалить</button>
             </form>
+            <canvas id="chart-{{ f.product.id }}" width="400" height="150"></canvas>
+            <script>
+                const ctx{{ f.product.id }} = document.getElementById('chart-{{ f.product.id }}').getContext('2d');
+                new Chart(ctx{{ f.product.id }}, {
+                    type: 'line',
+                    data: {
+                        labels: {{ f.price_history | map(attribute='timestamp') | list | tojson }},
+                        datasets: [{
+                            label: 'Цена',
+                            data: {{ f.price_history | map(attribute='price') | list | tojson }},
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            tension: 0.2,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Время' },
+                                ticks: { autoSkip: true, maxTicksLimit: 10 }
+                            },
+                            y: {
+                                title: { display: true, text: '₽' }
+                            }
+                        }
+                    }
+                });
+            </script>
         </li>
     {% endfor %}
 </ul>
+
 
 
 <h3>Добавить товар</h3>

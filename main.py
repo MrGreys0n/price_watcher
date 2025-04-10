@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Form, Cookie, stat
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from jinja2 import pass_environment
 from sqlalchemy import create_engine, Column, Integer, String, Numeric, Date, ForeignKey, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 from passlib.hash import bcrypt
@@ -185,7 +186,21 @@ def search_page(request: Request):
 @app.get("/favorites", response_class=HTMLResponse)
 def list_favorites(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     favs = db.query(Favorite).filter_by(user_id=current_user.id).all()
-    return templates.TemplateResponse("favorites.html", {"request": request, "favs": favs})
+
+    # Подгружаем историю цен для каждого продукта
+    for f in favs:
+        f.price_history = [
+            {"timestamp": ph.timestamp.strftime("%d.%m.%Y %H:%M"), "price": float(ph.price)}
+            for ph in db.query(PriceHistory)
+            .filter_by(product_id=f.product.id)
+            .order_by(PriceHistory.timestamp)
+            .all()
+        ]
+    return templates.TemplateResponse("favorites.html", {
+        "request": request,
+        "favs": favs
+    })
+
 
 
 @app.post("/add_favorite")
@@ -211,7 +226,6 @@ def remove_fav(product_id: int = Form(...), db: Session = Depends(get_db), curre
     db.delete(fav)
     db.commit()
     return RedirectResponse("/favorites", status_code=302)
-
 
 
 # === UTILS ===
