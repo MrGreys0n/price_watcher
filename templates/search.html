@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Поиск</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+{% include "partials/nav.html" %}
+<h2>Добавить товар по URL</h2>
+<form action="/add_favorite" method="post">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+    <input name="url" placeholder="URL товара">
+    <button type="submit">Добавить</button>
+</form>
+<a href="/favorites?user_id={{ user_id }}">Назад</a>
+</body>
+</html>

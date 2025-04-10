@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Избранное</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+{% include "partials/nav.html" %}
+<h2>Избранные товары</h2>
+<ul>
+    {% for f in favs %}
+        <li>
+            {{ f.product.name }} — {{ f.product.latest_price }} ₽ (обновлено: {{ f.product.last_checked }})
+            <form action="/remove_favorite" method="post" style="display:inline;">
+                <input type="hidden" name="product_id" value="{{ f.product.id }}">
+                <button type="submit">Удалить</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+
+
+<h3>Добавить товар</h3>
+<form action="/add_favorite" method="post">
+    <input name="url" placeholder="URL товара">
+    <button type="submit">Добавить</button>
+</form>
+</body>
+</html>

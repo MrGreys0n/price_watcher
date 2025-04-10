@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+{% include "partials/nav.html" %}
+<h2>Личный кабинет</h2>
+<form action="/update_profile" method="post">
+    <input name="username" value="{{ user.username }}" placeholder="Username">
+    <input name="password" type="password" placeholder="Новый пароль (если нужно)">
+    <button type="submit">Сохранить</button>
+</form>
+<a href="/favorites">Назад</a>
+</body>
+</html>
