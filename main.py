@@ -176,11 +176,9 @@ def update_profile(
     return RedirectResponse("/profile", status_code=302)
 
 
-
 @app.get("/search", response_class=HTMLResponse)
 def search_page(request: Request):
     return templates.TemplateResponse("search.html", {"request": request})
-
 
 
 @app.get("/favorites", response_class=HTMLResponse)
@@ -200,7 +198,6 @@ def list_favorites(request: Request, db: Session = Depends(get_db), current_user
         "request": request,
         "favs": favs
     })
-
 
 
 @app.post("/add_favorite")
