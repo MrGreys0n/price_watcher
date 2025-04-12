@@ -10,6 +10,8 @@
 <form action="/update_profile" method="post">
     <input type="hidden" name="user_id" value="{{ user.id }}">
     <input name="username" value="{{ user.username }}" placeholder="Username">
+    <label>Telegram @username:</label>
+    <input type="text" name="telegram_username" value="{{ user.telegram_username or '' }}">
     <input name="password" type="password" placeholder="Новый пароль (если нужно)">
     <button type="submit">Сохранить</button>
 </form>

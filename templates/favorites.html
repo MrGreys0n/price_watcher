@@ -10,7 +10,7 @@
 <h2>Избранные товары</h2>
 <ul>
     {% for f in favs %}
-        <li>
+        <li class="favorite-item">
             <strong>{{ f.product.name }}</strong> — {{ f.product.latest_price }} ₽
             (обновлено: {{ f.product.last_checked.strftime('%d.%m.%Y %H:%M') }})
             <form action="/remove_favorite" method="post" style="display:inline;">
@@ -18,7 +18,7 @@
                 <button type="submit">Удалить</button>
             </form>
 
-            <label>Период:
+            <label class="chart-label">Период:
                 <select onchange="updateChart_{{ f.product.id }}(this.value)">
                     <option value="1">День</option>
                     <option value="7">Неделя</option>
@@ -28,7 +28,7 @@
                 </select>
             </label>
 
-            <canvas id="chart-{{ f.product.id }}" width="400" height="150"></canvas>
+            <canvas id="chart-{{ f.product.id }}" width="200" height="60" class="chart-canvas"></canvas>
 
             <script>
                 const rawData{{ f.product.id }} = {{ f.price_history | tojson }};
@@ -50,7 +50,7 @@
                         scales: {
                             x: {
                                 title: { display: true, text: 'Время' },
-                                ticks: { autoSkip: true, maxTicksLimit: 10 }
+                                ticks: { autoSkip: true, maxTicksLimit: 8 }
                             },
                             y: {
                                 title: { display: true, text: '₽' }
@@ -79,9 +79,8 @@
                     chart{{ f.product.id }}.update();
                 }
 
-                updateChart_{{ f.product.id }}(30); // инициализация
+                updateChart_{{ f.product.id }}(30);
             </script>
-
         </li>
     {% endfor %}
 </ul>

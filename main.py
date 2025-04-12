@@ -1,3 +1,7 @@
+import os
+
+from aiogram import Bot
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, Form, Cookie, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,6 +42,8 @@ class User(Base):
     username = Column(String, unique=True)
     password_hash = Column(String)
     favorites = relationship("Favorite", back_populates="user")
+    telegram_username = Column(String, nullable=True)
+    telegram_chat_id = Column(String, nullable=True)
 
     def verify_password(self, password):
         return bcrypt.verify(password, self.password_hash)
@@ -65,7 +71,7 @@ class Favorite(Base):
 
 class PriceHistory(Base):
     __tablename__ = "price_history"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     product_id = Column(Integer, ForeignKey("products.id"))
     timestamp = Column(DateTime)
     price = Column(Numeric)
@@ -166,12 +172,14 @@ def profile(request: Request, current_user: User = Depends(get_current_user)):
 def update_profile(
     username: str = Form(...),
     password: str = Form(None),
+    telegram_username: str = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     current_user.username = username
     if password:
         current_user.password_hash = bcrypt.hash(password)
+    current_user.telegram_username = telegram_username
     db.commit()
     return RedirectResponse("/profile", status_code=302)
 
@@ -210,7 +218,7 @@ def add_fav(url: str = Form(...), db: Session = Depends(get_db), current_user: U
         db.commit()
     db.add(Favorite(user_id=current_user.id, product_id=product.id))
     db.commit()
-    db.add(PriceHistory(product_id=product.id, date=date.today(), price=price))
+    db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
     db.commit()
     return RedirectResponse("/favorites", status_code=302)
 
@@ -230,12 +238,50 @@ def parse_product(url):
     r = requests.get(url)
     soup = BeautifulSoup(r.text, 'html.parser')
     name = soup.title.string.strip()
-    price_text = soup.find(text=lambda t: t and '₽' in t)
+    # price_text = soup.find(text=lambda t: t and (any(i in t for i in ["₽", "руб", "рубль", "рубля", "рублей"])))
+    price_text = soup.find(text=lambda t: t and "₽" in t)
     price = float(''.join(filter(str.isdigit, price_text))) if price_text else 0
     return name, price
 
 
-def update_favorite_prices():
+# def update_favorite_prices():
+#     print(f"[{datetime.now()}] Начало обновления цен")
+#     db = SessionLocal()
+#     try:
+#         product_ids = db.query(Favorite.product_id).distinct()
+#         for pid, in product_ids:
+#             product = db.query(Product).get(pid)
+#             if not product:
+#                 continue
+#             try:
+#                 old_price = product.latest_price
+#                 name, price = parse_product(product.url)
+#                 if old_price != price:
+#                     for fav in product.favorites:
+#                         user = fav.user
+#                         if user.telegram_chat_id:
+#                             try:
+#                                 bot.send_message(
+#                                     chat_id=user.telegram_chat_id,
+#                                     text=f"💸 Цена на {product.name} изменилась:\nБыло: {old_price}₽, стало: {new_price}₽"
+#                                 )
+#                             except Exception as e:
+#                                 print(f"Ошибка при отправке уведомления: {e}")
+#                 product.latest_price = price
+#                 product.last_checked = datetime.now()
+#                 db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
+#                 db.commit()
+#                 print(f"[{datetime.now()}] Обновлена цена для {product.name}: {price} RUB")
+#             except Exception as e:
+#                 print(f"[{datetime.now()}] Ошибка обновления {product.url}: {e}")
+#     except Exception as e:
+#         print(f"[{datetime.now()}] Ошибка обновления: {e}")
+#     finally:
+#         db.close()
+
+
+async def notify_price_changes():
+    # bot = Bot(token="YOUR_BOT_TOKEN")
     print(f"[{datetime.now()}] Начало обновления цен")
     db = SessionLocal()
     try:
@@ -245,23 +291,46 @@ def update_favorite_prices():
             if not product:
                 continue
             try:
+                old_price = product.latest_price
                 name, price = parse_product(product.url)
-                product.latest_price = price
-                product.last_checked = datetime.now()
-                db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
-                db.commit()
-                print(f"[{datetime.now()}] Обновлена цена для {product.name}: {price} RUB")
+
+                if old_price != price:
+                    product.latest_price = price
+                    product.last_checked = datetime.now()
+                    db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
+                    db.commit()
+
+                    for fav in product.favorites:
+                        user = fav.user
+                        if user.telegram_chat_id:
+                            try:
+                                sticker = "📈"
+                                if price < old_price:
+                                    sticker = "📉"
+                                await bot.send_message(
+                                    chat_id=user.telegram_chat_id,
+                                    text=(f"{sticker} Цена изменилась!\n\n{product.name}\nБыло: {old_price}₽\n"
+                                          f"Стало: {price}₽\n"
+                                          f"Ссылка: {product.url}"
+                                    )
+                                )
+                            except Exception as e:
+                                print(f"Ошибка отправки: {e}")
+
             except Exception as e:
                 print(f"[{datetime.now()}] Ошибка обновления {product.url}: {e}")
-    except Exception as e:
-        print(f"[{datetime.now()}] Ошибка обновления: {e}")
     finally:
+        print(f"[{datetime.now()}] Конец обновления цен")
+        await bot.session.close()
         db.close()
 
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(update_favorite_prices, IntervalTrigger(minutes=20))
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
+load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=BOT_TOKEN)
+# scheduler = BackgroundScheduler()
+# scheduler.add_job(update_favorite_prices, IntervalTrigger(minutes=60))
+# scheduler.start()
+# atexit.register(lambda: scheduler.shutdown())
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
