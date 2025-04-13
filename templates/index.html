@@ -1,23 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login / Register</title>
-    <link rel="stylesheet" href="static/style.css">
+    <title>Главная</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 {% include "partials/nav.html" %}
-<h2>Регистрация</h2>
-<form action="/register" method="post">
-    <input name="username" placeholder="Username">
-    <input name="password" type="password" placeholder="Password">
-    <button type="submit">Зарегистрироваться</button>
-</form>
-
-<h2>Вход</h2>
-<form action="/login" method="post">
-    <input name="username" placeholder="Username">
-    <input name="password" type="password" placeholder="Password">
-    <button type="submit">Войти</button>
-</form>
+<h2>Добро пожаловать в PriceWatcher!</h2>
+{% if user %}
+    <p>Рады видеть, {{ user.username }}!</p>
+{% else %}
+    <p><a href="/login">Войти</a> или <a href="/register">Зарегистрироваться</a></p>
+{% endif %}
 </body>
 </html>

@@ -1,11 +1,116 @@
 <nav class="navbar">
     <div class="navbar-container">
         <a href="/" class="navbar-logo">PriceWatcher</a>
-        <div class="navbar-links">
-            <a href="/search">Поиск</a>
-            <a href="/favorites">Избранное</a>
-            <a href="/profile">Профиль</a>
-            <a href="/logout">Выйти</a>
+        <button class="burger" id="burger" aria-label="Открыть меню">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
+        <div class="navbar-links" id="navbar-links">
+            {% if user %}
+                <span>Привет, {{ user.username }}!</span>
+                <a href="/search">Поиск</a>
+                <a href="/favorites">Избранное</a>
+                <a href="/profile">Профиль</a>
+                <a href="/logout">Выйти</a>
+            {% else %}
+                <a href="/login">Вход</a>
+                <a href="/register">Регистрация</a>
+            {% endif %}
         </div>
     </div>
 </nav>
+
+<style>
+    .burger {
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        gap: 6px;
+        width: 30px;
+        height: 25px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 1100;
+    }
+
+    .burger .bar {
+        width: 100%;
+        height: 3px;
+        background-color: white;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+
+    .burger.open .bar:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .burger.open .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .burger.open .bar:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
+
+    @media (max-width: 768px) {
+        .burger {
+            display: flex;
+        }
+
+        .navbar-container {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-links {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            background-color: #1e1e2f;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            padding: 20px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+        }
+
+        .navbar-links.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .navbar-links a,
+        .navbar-links span {
+            margin: 10px 0;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const burger = document.getElementById('burger');
+        const navLinks = document.getElementById('navbar-links');
+        let isThrottled = false;
+
+        if (burger && navLinks) {
+            burger.addEventListener('click', () => {
+                if (isThrottled) return;
+                isThrottled = true;
+                setTimeout(() => isThrottled = false, 300);
+
+                navLinks.classList.toggle('show');
+                burger.classList.toggle('open');
+            });
+        }
+    });
+</script>

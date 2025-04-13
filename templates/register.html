@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% include "partials/nav.html" %}
+<div class="auth-container">
+    <h2>Регистрация</h2>
+    <form action="/register" method="post">
+        <input name="username" placeholder="Имя пользователя" required>
+        <input name="password" type="password" placeholder="Пароль" required>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</div>
+</body>
+</html>

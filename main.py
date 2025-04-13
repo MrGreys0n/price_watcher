@@ -117,13 +117,32 @@ class AuthDependency:
             raise HTTPException(status_code=status.HTTP_307_TEMPORARY_REDIRECT, headers={"Location": "/"})
         return user
 
+
 get_current_user = AuthDependency()
+
+
+def get_current_user_optional(token: str = Cookie(None, alias="access_token"), db: Session = Depends(get_db)):
+    if token:
+        payload = decode_token(token)
+        if payload and "sub" in payload:
+            return db.query(User).get(int(payload["sub"]))
+    return None
 
 
 # === ROUTES ===
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def home(request: Request, user: User = Depends(get_current_user_optional),):
+    return templates.TemplateResponse("index.html", {"request": request, "user": user})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, current_user: User = Depends(get_current_user_optional)):
+    return templates.TemplateResponse("login.html", {"request": request, "user": current_user})
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request, current_user: User = Depends(get_current_user_optional)):
+    return templates.TemplateResponse("register.html", {"request": request, "user": current_user})
 
 
 @app.post("/register")
@@ -185,8 +204,8 @@ def update_profile(
 
 
 @app.get("/search", response_class=HTMLResponse)
-def search_page(request: Request):
-    return templates.TemplateResponse("search.html", {"request": request})
+def search_page(request: Request, current_user: User = Depends(get_current_user)):
+    return templates.TemplateResponse("search.html", {"request": request, "user": current_user})
 
 
 @app.get("/favorites", response_class=HTMLResponse)
@@ -204,7 +223,8 @@ def list_favorites(request: Request, db: Session = Depends(get_db), current_user
         ]
     return templates.TemplateResponse("favorites.html", {
         "request": request,
-        "favs": favs
+        "favs": favs,
+        "user": current_user,
     })
 
 
@@ -242,42 +262,6 @@ def parse_product(url):
     price_text = soup.find(text=lambda t: t and "₽" in t)
     price = float(''.join(filter(str.isdigit, price_text))) if price_text else 0
     return name, price
-
-
-# def update_favorite_prices():
-#     print(f"[{datetime.now()}] Начало обновления цен")
-#     db = SessionLocal()
-#     try:
-#         product_ids = db.query(Favorite.product_id).distinct()
-#         for pid, in product_ids:
-#             product = db.query(Product).get(pid)
-#             if not product:
-#                 continue
-#             try:
-#                 old_price = product.latest_price
-#                 name, price = parse_product(product.url)
-#                 if old_price != price:
-#                     for fav in product.favorites:
-#                         user = fav.user
-#                         if user.telegram_chat_id:
-#                             try:
-#                                 bot.send_message(
-#                                     chat_id=user.telegram_chat_id,
-#                                     text=f"💸 Цена на {product.name} изменилась:\nБыло: {old_price}₽, стало: {new_price}₽"
-#                                 )
-#                             except Exception as e:
-#                                 print(f"Ошибка при отправке уведомления: {e}")
-#                 product.latest_price = price
-#                 product.last_checked = datetime.now()
-#                 db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
-#                 db.commit()
-#                 print(f"[{datetime.now()}] Обновлена цена для {product.name}: {price} RUB")
-#             except Exception as e:
-#                 print(f"[{datetime.now()}] Ошибка обновления {product.url}: {e}")
-#     except Exception as e:
-#         print(f"[{datetime.now()}] Ошибка обновления: {e}")
-#     finally:
-#         db.close()
 
 
 async def notify_price_changes():
