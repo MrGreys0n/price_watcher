@@ -1,13 +1,13 @@
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher
 from aiogram.types import Message
 from aiogram.filters import Command
-from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from main import SessionLocal, User, get_db
 from dotenv import load_dotenv
 import asyncio
 import os
+
+from app.models import SessionLocal, User
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
