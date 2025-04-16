@@ -7,7 +7,7 @@ from .scheduler import notify_price_changes
 import atexit
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(router)
 
 # Scheduler

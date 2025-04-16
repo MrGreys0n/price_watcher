@@ -7,9 +7,9 @@ from app.scheduler import notify_price_changes
 
 async def run_scheduler():
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(notify_price_changes, IntervalTrigger(seconds=20))
+    scheduler.add_job(notify_price_changes, IntervalTrigger(minutes=2))
     scheduler.start()
-    print("✅ Планировщик запущен (каждые 20 мин)")
+    print("✅ Планировщик запущен (каждые 2 мин, только для тестирования)")
     while True:
         await asyncio.sleep(3600)  # чтобы не выходил из цикла
 

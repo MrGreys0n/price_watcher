@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from passlib.handlers.bcrypt import bcrypt
+
 from .models import SessionLocal, User, Favorite, Product, PriceHistory
 from .utils import parse_product
 from .auth import create_access_token
@@ -9,19 +11,23 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="app/templates")
+
 
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, user: User = Depends(get_current_user_optional)):
     return templates.TemplateResponse("index.html", {"request": request, "user": user})
 
+
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, current_user: User = Depends(get_current_user_optional)):
     return templates.TemplateResponse("login.html", {"request": request, "user": current_user})
 
+
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request, current_user: User = Depends(get_current_user_optional)):
     return templates.TemplateResponse("register.html", {"request": request, "user": current_user})
+
 
 @router.post("/register")
 def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
@@ -31,6 +37,7 @@ def register(username: str = Form(...), password: str = Form(...), db: Session =
     db.add(user)
     db.commit()
     return RedirectResponse("/", status_code=302)
+
 
 @router.post("/login")
 def login(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
@@ -42,15 +49,18 @@ def login(username: str = Form(...), password: str = Form(...), db: Session = De
     response.set_cookie(key="access_token", value=token, httponly=True, samesite="lax", secure=False)
     return response
 
+
 @router.get("/logout")
 def logout():
     response = RedirectResponse("/")
     response.delete_cookie("access_token")
     return response
 
+
 @router.get("/profile", response_class=HTMLResponse)
 def profile(request: Request, current_user: User = Depends(get_current_user)):
     return templates.TemplateResponse("profile.html", {"request": request, "user": current_user})
+
 
 @router.post("/update_profile")
 def update_profile(username: str = Form(...), password: str = Form(None),
@@ -63,9 +73,11 @@ def update_profile(username: str = Form(...), password: str = Form(None),
     db.commit()
     return RedirectResponse("/profile", status_code=302)
 
+
 @router.get("/search", response_class=HTMLResponse)
 def search_page(request: Request, current_user: User = Depends(get_current_user)):
     return templates.TemplateResponse("search.html", {"request": request, "user": current_user})
+
 
 @router.get("/favorites", response_class=HTMLResponse)
 def list_favorites(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -76,6 +88,7 @@ def list_favorites(request: Request, db: Session = Depends(get_db), current_user
             for ph in db.query(PriceHistory).filter_by(product_id=f.product.id).order_by(PriceHistory.timestamp).all()
         ]
     return templates.TemplateResponse("favorites.html", {"request": request, "favs": favs, "user": current_user})
+
 
 @router.post("/add_favorite")
 def add_fav(url: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -90,6 +103,7 @@ def add_fav(url: str = Form(...), db: Session = Depends(get_db), current_user: U
     db.add(PriceHistory(product_id=product.id, timestamp=datetime.now(), price=price))
     db.commit()
     return RedirectResponse("/favorites", status_code=302)
+
 
 @router.post("/remove_favorite")
 def remove_fav(product_id: int = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

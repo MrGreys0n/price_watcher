@@ -1,8 +1,10 @@
+import os
+
 from sqlalchemy import create_engine, Column, Integer, String, Numeric, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from passlib.hash import bcrypt
 
-DATABASE_URL = "postgresql://postgres:1080@localhost/price_finder"
+DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
