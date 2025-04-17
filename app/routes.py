@@ -30,9 +30,13 @@ def register_page(request: Request, current_user: User = Depends(get_current_use
 
 
 @router.post("/register")
-def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+def register(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     if db.query(User).filter_by(username=username).first():
-        raise HTTPException(status_code=400, detail="Username taken")
+        return templates.TemplateResponse("errors/error.html", {
+            "request": request,
+            "status_code": 400,
+            "detail": "Имя пользователя занято"
+        }, status_code=400)
     user = User(username=username, password_hash=bcrypt.hash(password))
     db.add(user)
     db.commit()
@@ -40,10 +44,14 @@ def register(username: str = Form(...), password: str = Form(...), db: Session =
 
 
 @router.post("/login")
-def login(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+def login(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter_by(username=username).first()
     if not user or not user.verify_password(password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        return templates.TemplateResponse("errors/error.html", {
+            "request": request,
+            "status_code": 400,
+            "detail": "Неверные учетные данные"
+        }, status_code=400)
     token = create_access_token({"sub": str(user.id)})
     response = RedirectResponse("/favorites", status_code=302)
     response.set_cookie(key="access_token", value=token, httponly=True, samesite="lax", secure=False)

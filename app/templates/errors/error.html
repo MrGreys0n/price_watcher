@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Главная</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Ошибка {{ status_code }}</title>
+<!--      <style>-->
+<!--          body { font-family: sans-serif; text-align: center; padding: 3rem; }-->
+<!--          h1 { font-size: 3rem; color: #c00; }-->
+<!--          p { font-size: 1.5rem; }-->
+<!--      </style>-->
+</head>
+<body>
+{% include "partials/nav.html" %}
+<h1>Ошибка {{ status_code }}</h1>
+    <p>{{ detail }}</p>
+    <a href="/">Вернуться на главную</a>
+</body>
+</html>
